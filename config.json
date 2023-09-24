@@ -1,0 +1,26 @@
+{
+    "db_path": "db.sqlite3",
+    "openai":{
+        "key": "your-gpt-api-key",
+        "prompt": "extract key takeaways the transcript, answer in zh-Hans ",
+        "model" : "gpt-3.5-turbo",
+        "max_tokens": 4000
+    },
+    "openai_key":"",
+    "faster_whisper":{
+        "model": "large-v2",
+        "gpu_index": 0
+    },
+    "youtube_dl":{
+        "format": "bestaudio/best[height=720]",
+        "outtmpl": "%(title)s.%(ext)s"
+    },
+    "telegram_bot":{
+        "token": "your-bot-token"
+    },
+    "proxies":{
+        "http": "http://127.0.0.1:8888",
+        "https": "http://127.0.0.1:8888"
+    }
+
+}

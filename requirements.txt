@@ -1,0 +1,7 @@
+telegram
+asyncio
+openai
+tiktoken
+pandas
+faster_whisper
+
