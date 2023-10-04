@@ -18,9 +18,17 @@
     "telegram_bot":{
         "token": "your-bot-token"
     },
+    "telegra.ph":{
+        "short_name": "short name",
+        "author_name": "Author name",
+        "author_url": "",
+        "access_token": "XXXXXXXXXXXXXXXXXXXXXXXXX",
+        "auth_url": "https://edit.telegra.ph/auth/XXXXXXXXXXXXX"
+    },
     "proxies":{
         "http": "http://127.0.0.1:8888",
         "https": "http://127.0.0.1:8888"
     }
+
 
 }

@@ -53,7 +53,7 @@ async def main():
 
     lock = asyncio.Lock()
 
-    path="config.json"
+    path="../video-summerizer-config.json"
     with open(path, 'r') as f:
         config=json.load(f)
 

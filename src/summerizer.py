@@ -5,6 +5,7 @@ from youtube2srt import audio2text, SubtitleDownloader
 from OpenaiApi import SrtSummarizer
 import asyncio
 import json
+from telegra_ph import post_telegraph_page
 
 def send_telegram_message(token, chat_id, message, proxies):
     """
@@ -37,10 +38,10 @@ async def update_video_pool(conn, video_pool, lock):
 
 async def get_video_list(conn, channel):
     
-    user=await select_data_from_database(conn, "user_channel", tg_user_id=channel["tg_user_id"], channel_url=channel["channel_url"])
-    user=user[0]
+    #user_channel=await select_data_from_database(conn, "user_channel", tg_user_id=channel["tg_user_id"], channel_url=channel["channel_url"])
+    #user_channel=user_channel[0]
 
-    old_video_time=user["newest_video_time"]
+    old_video_time=channel["newest_video_time"]
     now=time.time()+time.altzone
 
     res=requests.get("https://rsshub.app/"+channel["channel_url"]+".json")
@@ -58,7 +59,7 @@ async def get_video_list(conn, channel):
         if now-t1>3600*24:  # only process video published in 1 day
             break
         print(f"channel {channel['channel_name']}: ",f'New video {item["title"]} found, adding to video pool!' )
-        result.append({"title":item["title"], "link":item["url"], "pubDate":t1, "tg_user_id":channel["tg_user_id"]})  # use timestamp as pubDate
+        result.append({"title":item["title"], "link":item["url"], "pubDate":t1, "tg_user_id":channel["tg_user_id"], "channel_name":channel["channel_name"]})  # use timestamp as pubDate
 
     return result
 
@@ -108,8 +109,10 @@ async def video_summerizer(conn, config, video_pool, lock):
             srt=downloader.get_subtitles( video["link"] )
             result=srt_summarize.summarize(srt)
             if result is not None:
-                
-                res=send_telegram_message(config["telegram_bot"]["token"], video["tg_user_id"], result, config["proxies"])
+                url=post_telegraph_page(config["telegra.ph"]["access_token"], video["title"], srt)
+                content=video["channel_name"] +"\n" + video["title"]+"\n [字幕(subtitles)]"+ f'({url})\n' + result
+
+                res=send_telegram_message(config["telegram_bot"]["token"], video["tg_user_id"], content, config["proxies"])
                 if res.status_code!=200:
                     print(f"Error: telegram message sent failed! status_code={res.status_code}, text={res.text}")
                     continue
