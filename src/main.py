@@ -8,7 +8,7 @@ import lxml.etree as etree
 
 
 
-from summerizer import update_summerizer_task_pool
+from summerizer_helper import update_summerizer_task_pool
 
 
 

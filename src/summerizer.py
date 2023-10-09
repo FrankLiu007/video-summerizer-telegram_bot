@@ -1,145 +1,206 @@
+import openai
+import pandas as pd
+import tiktoken 
 import requests
-from db_query import *
-import time
-from youtube2srt import audio2text, SubtitleDownloader
-from OpenaiApi import SrtSummarizer
-import asyncio
-import json
-from telegra_ph import post_telegraph_page
+import os
+import traceback
 
-def send_telegram_message(token, chat_id, message, proxies):
-    """
-    给 Telegram 用户发送消息。
-    
-    :param token: Telegram Bot 的访问 Token。
-    :param chat_id: 接收消息的用户 ID。
-    :param message: 要发送的消息内容。
-    """
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    params = {"chat_id": chat_id, "text": message}
-    response = requests.post(url, data=params, proxies=proxies)
-    return response
+# def estimate_token_count(text, model):
+#     encoding = tiktoken.encoding_for_model(model)
+#     return len(encoding.encode(text))
 
-async def update_video_pool(conn, video_pool, lock):
 
-    print("Running update_video_pool")
-    all_channels=await select_data_from_database(conn, "user_channel")
-    print("all_channels: ")
-    for channel in all_channels:
-        print("processing channel: ", channel["channel_name"])
-        videos=await get_video_list(conn, channel) 
-        if videos:
-            async with lock:
-                if channel['channel_url'] in video_pool:
-                    video_pool[channel['channel_url'] ].extend(videos)
-                else:
-                    video_pool[channel['channel_url'] ]= videos
-    return
+class SrtSummarizer:
+    def __init__(self, config, proxies ):
 
-async def get_video_list(conn, channel):
-    
-    #user_channel=await select_data_from_database(conn, "user_channel", tg_user_id=channel["tg_user_id"], channel_url=channel["channel_url"])
-    #user_channel=user_channel[0]
+        self.init_openai(config)
 
-    old_video_time=channel["newest_video_time"]
-    now=time.time()+time.altzone
-
-    res=requests.get("https://rsshub.app/"+channel["channel_url"]+".json")
-    data=json.loads(res.text)
-    
-    result=[]
-    for item in data["items"] :
-
-        pubDate=item["date_published"]
-        time_tuple = time.strptime(pubDate, "%Y-%m-%dT%H:%M:%S.%fZ")
-        t1 = time.mktime(time_tuple)
+        self.max_token_count = config["max_tokens"]    
+        self.model=config["model"] 
         
-        if t1<=old_video_time:  # only process video published after last processed video
-            break
-        if now-t1>3600*24:  # only process video published in 1 day
-            break
-        print(f"channel {channel['channel_name']}: ",f'New video {item["title"]} found, adding to video pool!' )
-        result.append({"title":item["title"], "link":item["url"], "pubDate":t1, "tg_user_id":channel["tg_user_id"], "channel_name":channel["channel_name"]})  # use timestamp as pubDate
+        self.encoding = self.init_encoding(config["model"])
 
-    return result
+        self.config=config
+    def init_openai(self, config):
+        openai.api_key = config["key"]
+        if config["api_base_url"]:
+            openai.api_base = config["api_base_url"]
+        if config['api_type']:
+            openai.api_type = config['api_type']
+        if config['api_version']:
+            openai.api_version = config['api_version']
 
-def video_pool_is_empty(video_pool):
-    x=False
-    for channel in video_pool:
-        x=x or video_pool[channel]
-    return not x
+    def init_encoding(self, model):
+        try:
+            encoding = tiktoken.encoding_for_model(model)
+        except KeyError:
+            print("Warning: model not found. Using cl100k_base encoding.")
+            encoding = tiktoken.get_encoding("cl100k_base")
+        return encoding
 
-async def video_summerizer(conn, config, video_pool, lock):
+    def estimate_token_count(self, text):
 
-    model=config['faster_whisper']['model']  #default large-v2
-    gpu=config['faster_whisper']['gpu_index']
-    audio2text_tool=audio2text(model, gpu)  ## support gpu only, cpu too slow
+        return len( self.encoding.encode(text) )   
 
-    # 创建字幕下载器实例
-    downloader = SubtitleDownloader(config['youtube_dl'], audio2text_tool)
-    srt_summarize = SrtSummarizer(config["openai"]["key"], config["openai"]["prompt"] ,config["proxies"],  config["openai"]["model"]   , config["openai"]["max_tokens"]  )
-
-    if not video_pool:
-        await asyncio.sleep(20) # sleep 20 seconds if video pool is empty
-    if video_pool_is_empty(video_pool):
-        print("video pool is empty!")
-        await asyncio.sleep(60*60) # sleep 1 hour if video pool is empty
-
-    for channel in video_pool:
-        print(f"start summerize channel {channel}")
-        if not video_pool[channel]:
-            print(f"video pool for channel {channel} is empty!")
-            continue
-        user_channel=await select_data_from_database(conn, "user_channel", channel_url=channel, tg_user_id=video_pool[channel][0]["tg_user_id"])
+    def estimate_tokens_from_messages(self, messages):   
+        # source: https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
+        """Return the number of tokens used by a list of messages."""
+        model=self.config["model"]
         
-        old_video_time=user_channel[0]["newest_video_time"]
+        if model in {
+            "gpt-3.5-turbo-0613",
+            "gpt-3.5-turbo-16k-0613",
+            "gpt-4-0314",
+            "gpt-4-32k-0314",
+            "gpt-4-0613",
+            "gpt-4-32k-0613",
+            "gpt-35-turbo-0613-jpe",
+            }:
+            tokens_per_message = 3
+            tokens_per_name = 1
+        elif model == "gpt-3.5-turbo-0301":
+            tokens_per_message = 4  # every message follows <|start|>{role/name}\n{content}<|end|>\n
+            tokens_per_name = -1  # if there's a name, the role is omitted
+        elif "gpt-3.5-turbo" in model:
+            print("Warning: gpt-3.5-turbo may update over time. Returning num tokens assuming gpt-3.5-turbo-0613.")
+            tokens_per_message = 3
+            tokens_per_name = 1
+        elif "gpt-4" in model:
+            print("Warning: gpt-4 may update over time. Returning num tokens assuming gpt-4-0613.")
+            tokens_per_message = 3
+            tokens_per_name = 1
+        else:
+            raise NotImplementedError(
+                f"""num_tokens_from_messages() is not implemented for model {model}. See https://github.com/openai/openai-python/blob/main/chatml.md for information on how messages are converted to tokens."""
+            )
+        num_tokens = 0
+        for message in messages:
+            num_tokens += tokens_per_message
+            for key, value in message.items():
+                num_tokens += len(self.encoding.encode(value))
+                if key == "name":
+                    num_tokens += tokens_per_name
+        num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
 
-        new_video_time=-1
-
-        while video_pool[channel]:
-            async with lock:                   
-                video=video_pool[channel].pop(0)
-
-            if video["pubDate"] <= old_video_time:
-                print('Error: video pubDate is older than newest_time, skip this channel. This is not supposed to happen, please check the code!')
-                break
-            if video["pubDate"] > new_video_time:
-                new_video_time=video["pubDate"]
-
-            srt=downloader.get_subtitles( video["link"] )
-            result=srt_summarize.summarize(srt)
-            if result is not None:
-                url=post_telegraph_page(config["telegra.ph"]["access_token"], video["title"], srt)
-                content=video["channel_name"] +"\n" + video["title"]+"\n [字幕(subtitles)]"+ f'({url})\n' + result
-
-                res=send_telegram_message(config["telegram_bot"]["token"], video["tg_user_id"], content, config["proxies"])
-                if res.status_code!=200:
-                    print(f"Error: telegram message sent failed! status_code={res.status_code}, text={res.text}")
-                    continue
-                else:
-                    print(f"video {video['title']} summerized and sent to user {video['tg_user_id']}!")
-
-        if new_video_time>0:
-            await update_data_to_database(conn, "user_channel", {"newest_video_time": new_video_time}, {"tg_user_id":video["tg_user_id"], "channel_url":channel})
+        return num_tokens
 
 
-async def main():
-    import aiosqlite
-    import json
-    import sqlite3
+    def split_srt(self, srt):
+        ## srt to segmentation
+        token_count = self.max_token_count /3  ## split srt into segments with 1000 tokens
+        tmp = 0
+        tmp_str = ''
+        result = []
+        for index, row in srt.iterrows():
+
+            tmp = tmp + self.estimate_token_count( row['text'])
+            tmp_str = tmp_str + ',' + row['text']
+            if tmp > token_count:
+                result.append([tmp, tmp_str])
+                tmp_str = ''
+                tmp = 0
+        
+        result.append([tmp, tmp_str])  ## last segment
+
+        return result
+
+    def edit_segment(self, segment):
+        prompt = self.config["roles"]["editor"]["prompt"]
+
+        temperature=self.config["roles"]["editor"]["temperature"]
+
+        message=[
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": segment}
+                ]
+        message_token_count=self.estimate_tokens_from_messages(message)
+
+        payload = {
+            'messages': message,
+            #'max_tokens': message_token_count,
+            'temperature': temperature,
+            'engine': self.config["model"],
+        }
+        return self.get_assistant_reply(payload)
+
+    def summerize_segment(self, segment, output_token_count):
+        prompt = self.config["roles"]["summerizer"]["prompt"]
+
+        temperature=self.config["roles"]["summerizer"]["temperature"]
+        messages=[{"role": "system", "content": prompt},
+                {"role": "user", "content": segment}]
+        
+        payload = {
+            'messages': messages,
+            #'max_tokens': output_token_count,  
+            'temperature': temperature,
+            'engine': self.config["model"],
+        }
+        return self.get_assistant_reply(payload)
+    
+
+    def get_assistant_reply(self, payload):
+        for i in range(5):
+            try:
+                response = openai.ChatCompletion.create(**payload)
+        # 提取助手的回答
+                assistant_reply = response['choices'][0]['message']['content']
+                return assistant_reply
+            except:   ##打印出错信息
+                traceback.print_exc()
+                print("retrying get_assistant_reply ...")
+    def edit(self, srt):
+        segments = self.split_srt(srt)
+        paragraphs = []
+        for seg in segments:
+            paragraphs.append( self.edit_segment(seg[1]) ) ###
+        return paragraphs
+
+    def summarize(self, paragraphs):
+
+        keypoints = []
+        for seg in paragraphs:
+            token_count=self.estimate_token_count(seg)  # output 1/5 tokens
+            keypoints.append( self.summerize_segment(seg, int(token_count/5)) )
+
+        xx=len(keypoints) 
+        if  xx>1:
+            return self.merge_keypoints(keypoints)
+        elif xx==1:
+            return keypoints[0]
+        else:
+            return 
+
+    def merge_keypoints(self, keypoints):
+        tmp_str = '\n'.join(keypoints)
+        token_count = self.estimate_token_count(tmp_str)   
+
+        if token_count*1.3 > self.max_token_count:
+            print('warning, the responses needed to merge are too long!', 'token_acount=', token_count)
+            print('return simple merge of response from all segments')
+            return '\n'.join(keypoints) 
+        else:
+            res = self.summerize_segment(tmp_str, self.max_token_count-token_count )
+            return res
+
+
+if __name__ == "__main__": 
+    ### usage examples
     import time
-    import asyncio
-    lock = asyncio.Lock()
+    import json
+    t0=time.time()
 
-    path="config.json"
+    srt=pd.read_csv('d:/abc.csv')
+    path=r"C:\Users\liuqimin\video-summerizer-config.json"
     with open(path, 'r') as f:
         config=json.load(f)
-    video_pool={}
-    async with aiosqlite.connect(config['db_path']) as conn:
+        srt_summarize = SrtSummarizer(config["openai"], [] )
+    os.environ["HTTP_PROXY"] = config["proxies"]["http"]
+    os.environ["HTTPS_PROXY"] = config["proxies"]["https"]
 
-        conn.row_factory = sqlite3.Row  ## return dict instead of tuple
-        await update_video_pool(conn,  video_pool, lock) 
-    print(video_pool)
+    paragraphs=srt_summarize.edit(srt)
+    result=srt_summarize.summarize(paragraphs)
 
-if __name__ == "__main__":
-    asyncio.run(main())
+    print(result)
+    print(paragraphs)
+    print("总共花了：",time.time()-t0)

@@ -1,29 +1,17 @@
 
 import json
-from summerizer import update_video_pool, video_summerizer
+from summerizer_helper import update_video_pool, video_summerizer
 import asyncio
 import time
 
 from db_query import *
 import aiosqlite
 
-# def send_telegram_message(token, chat_id, message, proxies):
-#     """
-#     给 Telegram 用户发送消息。
-    
-#     :param token: Telegram Bot 的访问 Token。
-#     :param chat_id: 接收消息的用户 ID。
-#     :param message: 要发送的消息内容。
-#     """
-#     url = f"https://api.telegram.org/bot{token}/sendMessage"
-#     params = {"chat_id": chat_id, "text": message}
-#     response = requests.post(url, data=params, proxies=proxies)
-#     return response
-
-async def init_db(db_path):
-    db=await aiosqlite.connect(config['db_path']) 
-    db.row_factory = aiosqlite.Row  ## return dict instead of tuple
-    return db
+### 每个任务建一个异步数据库连接更合适（连接数并不多）
+# async def init_db(db_path):
+#     db=await aiosqlite.connect(config['db_path']) 
+#     db.row_factory = aiosqlite.Row  ## return dict instead of tuple
+#     return db
 
 async def video_pool_update_task(t, config, video_pool, lock):
     print("Running video_pool_update_task")
@@ -50,6 +38,7 @@ async def video_summerizer_task(config, video_pool, lock):
             await video_summerizer(conn, config, video_pool, lock)
 
 async def main():
+    import os
 
     lock = asyncio.Lock()
 
@@ -58,7 +47,8 @@ async def main():
         config=json.load(f)
 
     video_pool={} 
-
+    os.environ["HTTP_PROXY"] = config["proxies"]["http"]
+    os.environ["HTTPS_PROXY"] = config["proxies"]["https"]
     #1. video pool update task
     task0=asyncio.create_task( video_pool_update_task(60*30 ,config, video_pool, lock) ) # update video pool every half hour
 
