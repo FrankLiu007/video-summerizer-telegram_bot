@@ -2,7 +2,7 @@ import requests
 from db_query import *
 import time
 from youtube2srt import audio2text, SubtitleDownloader
-from summerizer import SrtSummarizer
+from summarizer import SrtSummarizer
 import asyncio
 import json
 import telegra_ph 
@@ -128,7 +128,7 @@ async def video_summerizer(conn, config, video_pool, lock):
             tg_message=f'<b>{video["channel_name"]}\n</b>'  \
                 + f'<u>{video["title"]}\n</u>' \
                 + f'👉<a href="{srt_url}" >字幕(subtitle)</a>' \
-                + f'👉<a href="{edit_url}">全文(fulltest)</a>\n' \
+                + f'👉<a href="{edit_url}">全文(fulltext)</a>\n' \
                 + result
 
             res=send_telegram_message(config["telegram_bot"]["token"], video["tg_user_id"], tg_message, config["proxies"])
@@ -157,7 +157,8 @@ async def main():
     async with aiosqlite.connect(config['db_path']) as conn:
 
         conn.row_factory = sqlite3.Row  ## return dict instead of tuple
-        await update_video_pool(conn,  video_pool, lock) 
+        while True:
+            await update_video_pool(conn,  video_pool, lock) 
     print(video_pool)
 
 if __name__ == "__main__":

@@ -46,6 +46,7 @@ Principle:
 ```python
 python src/run_bot.py
 python src/run_summarizer.py
+```
 
 ## Install  (not finished)
 > 1. install pytorch

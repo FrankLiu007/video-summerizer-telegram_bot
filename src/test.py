@@ -9,7 +9,7 @@ if __name__ == "__main__":
     import time
     import json
     import os
-    from summerizer import SrtSummarizer
+    from summarizer import SrtSummarizer
     t0=time.time()
     path=r"C:\Users\liuqimin\video-summerizer-config.json"
     with open(path, 'r') as f:

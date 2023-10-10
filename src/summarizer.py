@@ -92,7 +92,8 @@ class SrtSummarizer:
         tmp_str = ''
         result = []
         for index, row in srt.iterrows():
-
+            if not row['text'] :  ## skip empty lines
+                continue
             tmp = tmp + self.estimate_token_count( row['text'])
             tmp_str = tmp_str + ',' + row['text']
             if tmp > token_count:
@@ -160,6 +161,8 @@ class SrtSummarizer:
 
         keypoints = []
         for seg in paragraphs:
+            if not seg: # skip empty segments
+                continue
             token_count=self.estimate_token_count(seg)  # output 1/5 tokens
             keypoints.append( self.summerize_segment(seg, int(token_count/5)) )
 

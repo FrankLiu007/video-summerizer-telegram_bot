@@ -1,6 +1,6 @@
 
 import json
-from summerizer_helper import update_video_pool, video_summerizer
+from summarizer_helper import update_video_pool, video_summerizer
 import asyncio
 import time
 

@@ -1,25 +1,16 @@
-#  视频 summerizer & Telegram Bot  (only youtube supported at present ) [English Document](readme_en.md) 
+#  Video Summarization Telegram Bot (only youtube supported at present ) [English readme](readme.md) 
 ## Why?  我有喜欢的视频博主，但是该博主太勤奋，听他的视频非常费时间，因此做了这个视频总结的项目，并将总结的内容推送到telegram bot .
 
-# Video Summerizer (only youtube supported at present )
+# Video Summarization Telegram Bot (only youtube supported at present )
 # 项目主要三部分：
 > 前端
 1. Telegram bot。前端，负责添加视频频道、删除视频频道
-> 后端
-原理：
-- 对于有字幕的视频，直接下载; 
-- 对于没有字幕的视频，则下载视频的音频部分（youtube 是音视频分开的）
-- 通过 faster_whisper 将语音转为字幕
-- 用 gpt 对字幕内容进行总结
-
-# Video Summerizer (only youtube supported at present )
-
-- 对于有字幕的视频，直接下载; 
-- 对于没有字幕的视频，则下载视频的音频部分（youtube 是音视频分开的）
-- 通过 faster_whisper 将语音转为字幕
-- 用 gpt 对字幕内容进行总结
-
-
+> 后端技术栈
+- rsshub获取需要下载的视频信息（因此增加别的视频非常容易）
+- 对于有字幕的视频，直接下载字幕; 
+- 对于没有字幕的视频，则下载视频的音频部分（youtube 是音视频分开的），通过 faster_whisper 将语音转为字幕
+- 用 gpt 对字幕内容进行编辑，publish到telegra.ph 
+- 用 gpt对编辑后的文本进行总结，发送给telegram用户
 
 todo 
 - [x] 加入数据库的支持，暂时考虑sqlite3，程序任何时候应该保持一个数据库的连接对象。

@@ -63,9 +63,9 @@ def localized_text(key, bot_language):
             # return key as text
             return key
 
-def estimate_token_count(text, model):
-    encoding = tiktoken.encoding_for_model(model)
-    return len(encoding.encode(text))
+# def estimate_token_count(text, model):
+#     encoding = tiktoken.encoding_for_model(model)
+#     return len(encoding.encode(text))
 
 class SrtSummarizer:
     def __init__(self, api_key, prompt, model='gpt-3.5-turbo', max_token_count=4000):
