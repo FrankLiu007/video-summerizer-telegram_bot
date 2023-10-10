@@ -8,6 +8,7 @@ import pytube
 from db_query import *
 import time
 import aiosqlite
+import os
 
 from telegram import __version_info__
 if __version_info__ < (20, 0, 0, "alpha", 5):
@@ -54,6 +55,7 @@ class Bot:
         self.conn.row_factory = aiosqlite.Row  ## return dict instead of tuple
 
     def __init__(self, bot_token, db_path) -> None:
+        #proxy = os.environ["HTTP_PROXY"]
         self.application = Application.builder().token(bot_token).build()
         loop= asyncio.get_event_loop()
         loop.run_until_complete(self.init_db(db_path))
@@ -150,8 +152,12 @@ class Bot:
         await update.message.reply_text('Select channel need to remove:\n', reply_markup=reply_markup)
 
     def get_youtube_channel(self, url):
+        proxies={
+            "http": os.environ["HTTP_PROXY"],
+            "https": os.environ["HTTPS_PROXY"]
+        }
         try:
-            x=pytube.YouTube(url)
+            x=pytube.YouTube(url, proxies=proxies)
             channel_id=x.channel_id
             channel_name=x.author
             return {'url':"youtube/channel/"+channel_id, "name":channel_name, "id":channel_id}

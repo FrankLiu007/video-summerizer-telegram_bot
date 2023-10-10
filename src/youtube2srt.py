@@ -3,9 +3,11 @@ import  requests
 import json
 import pandas as pd
 from whisper_helper import audio2text
+import os
 
 class SubtitleDownloader:
     def __init__(self, ydl_opts, audio2text_tool):
+        ydl_opts["proxy"]=os.environ["HTTPS_PROXY"]
         self.ydl=youtube_dl.YoutubeDL(ydl_opts)
         self.audio2text_tool=audio2text_tool
     def download_audio(self, url):
@@ -24,8 +26,15 @@ class SubtitleDownloader:
         return pd.concat(result, axis=0)
 
     def get_subtitles(self, url):
-
-        self.info_dict = self.ydl.extract_info(url, download=False)
+        try:
+            self.info_dict = self.ydl.extract_info(url, download=False)
+            if self.info_dict.get('is_live'):
+                print("live video, skip: ", url)
+                return None
+        except youtube_dl.utils.DownloadError as e:
+            if "This live event will begin" in str(e):
+                return None
+            
         fname=self.ydl.prepare_filename(self.info_dict)
         if 'subtitles' in self.info_dict:   ##   video has subtitles
             subtitle=self.down_subtitle(self.info_dict['subtitles'])
@@ -42,6 +51,10 @@ class SubtitleDownloader:
         results={}
         langs=["zh-TW", "zh-Hans"]
          # 遍历每种语言的字幕，并下载到本地
+        proxies={
+            "http": os.environ["HTTP_PROXY"],
+            "https": os.environ["HTTPS_PROXY"]
+        }
         for lang in subtitles:   ## 暂时只下载一种字幕，中文或者英文
             if lang not in langs:
                 continue
@@ -49,7 +62,7 @@ class SubtitleDownloader:
                 print('json3 format subtitles not found')
                 return None
             tmp= subtitles[lang][0]     # using json3 only
-            subtitle_json=json.loads(requests.get(tmp['url']).text)
+            subtitle_json=json.loads(requests.get(tmp['url'], proxies=proxies).text)
             subtitle=self.json2srt(subtitle_json)
             return subtitle
 

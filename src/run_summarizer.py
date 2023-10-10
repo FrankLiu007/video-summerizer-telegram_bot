@@ -39,12 +39,19 @@ async def video_summerizer_task(config, video_pool, lock):
 
 async def main():
     import os
+    import chardet
 
     lock = asyncio.Lock()
 
     path="../video-summerizer-config.json"
-    with open(path, 'r') as f:
-        config=json.load(f)
+
+# read config file with encoding detection
+    with open(path, 'rb') as f:
+        data = f.read()
+    encoding = chardet.detect(data)['encoding']
+    data = data.decode(encoding)
+    config = json.loads(data)
+
 
     video_pool={} 
     os.environ["HTTP_PROXY"] = config["proxies"]["http"]

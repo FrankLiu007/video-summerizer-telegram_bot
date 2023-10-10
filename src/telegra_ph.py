@@ -1,6 +1,6 @@
 import time
 import requests
-
+import os
 def split_paragraphs(paragraphs):
     result =  []
     content=[]
@@ -86,7 +86,11 @@ def edit_telegraph_page(access_token, title, content, path):
 
 ##
 def post_telegraph_page(base_url, params):
-    json_response = requests.post(base_url, json=params).json()
+    proxies={
+        "http": os.environ["HTTP_PROXY"],
+        "https": os.environ["HTTPS_PROXY"]
+    }
+    json_response = requests.post(base_url, json=params, proxies=proxies).json()
     if json_response.get("ok"):
         return json_response["result"]["url"] 
     else:

@@ -6,6 +6,7 @@ from summarizer import SrtSummarizer
 import asyncio
 import json
 import telegra_ph 
+import os
 
 def send_telegram_message(token, chat_id, message, proxies):
     """
@@ -17,6 +18,11 @@ def send_telegram_message(token, chat_id, message, proxies):
     """
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     params = {"chat_id": chat_id, "text": message, 'parse_mode': 'HTML'}
+
+    proxies={
+        "http": os.environ["HTTP_PROXY"],
+        "https": os.environ["HTTPS_PROXY"]
+    }
     for i in range(5):
         try:
             response = requests.post(url, data=params, proxies=proxies)
@@ -53,7 +59,11 @@ async def get_video_list(conn, channel):
     old_video_time=channel["newest_video_time"]
     now=time.time()+time.altzone
 
-    res=requests.get("https://rsshub.app/"+channel["channel_url"]+".json")
+    proxies={
+        "http": os.environ["HTTP_PROXY"],
+        "https": os.environ["HTTPS_PROXY"]
+    }
+    res=requests.get("https://rsshub.app/"+channel["channel_url"]+".json", proxies=proxies)
     data=json.loads(res.text)
     
     result=[]
@@ -116,6 +126,10 @@ async def video_summerizer(conn, config, video_pool, lock):
                 new_video_time=video["pubDate"]
 
             srt=downloader.get_subtitles( video["link"] )
+            if srt is None :
+                print(f"Error: no subtitle found for video {video['title']}, skip this video!")
+                print("This may because it is a live video !")
+                continue
 
             paragraphs=srt_summarize.edit(srt)
             result=srt_summarize.summarize(paragraphs)
