@@ -29,6 +29,7 @@ todo
 - [ ] http请求部分的容错处理
 - [ ] http请求，proxy的设置的统一化考虑
 - [ ] 暂时只允许指定用户使用？（gpu资源有限）
+- [ ] 降低包依赖，去除pytube、XXX的依赖
 
 ## Run
     python src/run_bot.py

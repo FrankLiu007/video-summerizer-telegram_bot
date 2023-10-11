@@ -19,7 +19,7 @@ if __version_info__ < (20, 0, 0, "alpha", 5):
     )
 
 from telegram.ext import (
-    Application,
+    ApplicationBuilder,
     CommandHandler,
     MessageHandler,
     filters,
@@ -54,12 +54,7 @@ class Bot:
         self.conn = await aiosqlite.connect(db_path)
         self.conn.row_factory = aiosqlite.Row  ## return dict instead of tuple
 
-    def __init__(self, bot_token, db_path) -> None:
-        #proxy = os.environ["HTTP_PROXY"]
-        self.application = Application.builder().token(bot_token).build()
-        loop= asyncio.get_event_loop()
-        loop.run_until_complete(self.init_db(db_path))
-
+    async def set_menu(self):
         commands = [
             BotCommand(command='/add_channel', description='添加频道'),
             BotCommand(command='/view_channel', description='查看频道列表'),
@@ -67,9 +62,8 @@ class Bot:
             BotCommand(command='/readme', description='Read me')
         ]
         
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.application.bot.setMyCommands(commands))
-
+            
+    async def add_handlers(self):
         self.application.add_handler(CommandHandler("add_channel", self.add_channel))
         self.application.add_handler(MessageHandler( filters.TEXT & ~filters.COMMAND, self.message_handler) )
 
@@ -78,6 +72,15 @@ class Bot:
         self.application.add_handler(CommandHandler("remove_channel", self.remove_channel))
         self.application.add_handler(CallbackQueryHandler(self.remove_channel_callback))
  
+    def __init__(self, bot_token, db_path) -> None:
+        builder=ApplicationBuilder().token(bot_token)
+        self.application = builder.build()
+        loop= asyncio.get_event_loop()
+        loop.run_until_complete(self.init_db(db_path))
+
+        loop.run_until_complete(self.set_menu())
+
+
     async def readme(self, update: Update, context: CallbackContext) ->None:
         tt="""
     This bot is a video summerizer. 
