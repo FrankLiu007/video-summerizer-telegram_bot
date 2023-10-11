@@ -57,7 +57,7 @@ async def main():
     os.environ["HTTP_PROXY"] = config["proxies"]["http"]
     os.environ["HTTPS_PROXY"] = config["proxies"]["https"]
     #1. video pool update task
-    task0=asyncio.create_task( video_pool_update_task(60*30 ,config, video_pool, lock) ) # update video pool every half hour
+    task0=asyncio.create_task( video_pool_update_task(60*3 ,config, video_pool, lock) ) # update video pool every half hour
 
     task1= asyncio.create_task(video_summerizer_task( config, video_pool, lock) )
  

@@ -101,8 +101,8 @@ async def video_summerizer(conn, config, video_pool, lock):
     if not video_pool:
         await asyncio.sleep(20) # sleep 20 seconds if video pool is empty
     if video_pool_is_empty(video_pool):
-        print("video pool is empty!")
-        await asyncio.sleep(60*60) # sleep 1 hour if video pool is empty
+        print("video pool is empty, sleeping for 3 minutes !")
+        await asyncio.sleep(60*3) # sleep 3 minutes if video pool is empty
 
     for channel in video_pool:
         print(f"start summerize channel {channel}")
