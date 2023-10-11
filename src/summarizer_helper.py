@@ -8,7 +8,7 @@ import json
 import telegra_ph 
 import os
 
-def send_telegram_message(token, chat_id, message, proxies):
+def send_telegram_message(token, chat_id, message):
     """
     给 Telegram 用户发送消息。
     
@@ -96,7 +96,7 @@ async def video_summerizer(conn, config, video_pool, lock):
 
     # 创建字幕下载器实例
     downloader = SubtitleDownloader(config['youtube_dl'], audio2text_tool)
-    srt_summarize = SrtSummarizer(config["openai"],config["proxies"] )
+    srt_summarize = SrtSummarizer(config["openai"] )
 
     if not video_pool:
         await asyncio.sleep(20) # sleep 20 seconds if video pool is empty
@@ -145,7 +145,7 @@ async def video_summerizer(conn, config, video_pool, lock):
                 + f'👉<a href="{edit_url}">全文(fulltext)</a>\n' \
                 + result
 
-            res=send_telegram_message(config["telegram_bot"]["token"], video["tg_user_id"], tg_message, config["proxies"])
+            res=send_telegram_message(config["telegram_bot"]["token"], video["tg_user_id"], tg_message)
             if res.status_code!=200:
                 print(f"Error: telegram message sent failed! status_code={res.status_code}, text={res.text}")
                 continue

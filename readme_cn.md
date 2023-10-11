@@ -30,6 +30,9 @@ todo
 - [ ] http请求，proxy的设置的统一化考虑
 - [ ] 暂时只允许指定用户使用？（gpu资源有限）
 - [ ] 降低包依赖，去除pytube、XXX的依赖
+- [ ] 添加频道时，应该支持带频道的youtube url（现在只支持视频url）
+- [ ] 视频池空了，等待时间太久，应该变成可配置的，时间要短一些
+- [ ] requests 设置重试次数，比如3次
 
 ## Run
     python src/run_bot.py

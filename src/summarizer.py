@@ -11,7 +11,7 @@ import traceback
 
 
 class SrtSummarizer:
-    def __init__(self, config, proxies ):
+    def __init__(self, config ):
 
         self.init_openai(config)
 
