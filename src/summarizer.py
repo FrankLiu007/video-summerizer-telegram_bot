@@ -149,7 +149,9 @@ class SrtSummarizer:
                 return assistant_reply
             except:   ##打印出错信息
                 traceback.print_exc()
-                print("retrying get_assistant_reply ...")
+                print(f"retrying get_assistant_reply, the {i+1} times ...")
+        return ''
+
     def edit(self, srt):
         segments = self.split_srt(srt)
         paragraphs = []
