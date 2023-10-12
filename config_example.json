@@ -1,0 +1,47 @@
+{
+    "db_path": "db.sqlite3",
+    "openai":{
+        "api_base_url":  "https://g5.openai.azure.com/",
+        "api_type":"azure",
+        "api_version": "2023-07-01-preview",
+        "key": "your key",
+        "roles":{
+            "editor":{ 
+                "prompt":"Edit text, divide into paragraphs, and tidy up the punctuation, in 中文(Chinese)",
+                "temperature": 0.6
+            },
+            "summerizer": {
+                "prompt":"extract key takeaways the transcript in 中文(Chinese)",
+                "temperature": 0.6
+            }
+        },
+
+        "model" : "gpt-35-turbo-0613-jpe",
+        "max_tokens": 4000   
+    },
+
+    "faster_whisper":{
+        "model": "large-v2",
+        "gpu_index": 0
+    },
+    "youtube_dl":{
+        "format": "bestaudio/best[height=720]",
+        "outtmpl": "%(title)s.%(ext)s",
+        "youtube_api_key":"your key"
+    },
+    "telegram_bot":{
+        "token": "your token"
+    },
+    "telegra.ph":{
+        "short_name": "Sandbox",
+        "author_name": "Anonymous",
+        "author_url": "",
+        "access_token": "your token",
+        "auth_url": "https://edit.telegra.ph/auth/xxxxxxx"
+    },
+    "proxies":{
+        "http": "http://127.0.0.1:1080",
+        "https": "http://127.0.0.1:1080"
+    }
+
+}
