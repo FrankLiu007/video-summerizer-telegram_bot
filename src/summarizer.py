@@ -164,7 +164,12 @@ class SrtSummarizer:
             if not seg: # skip empty segments
                 continue
             token_count=self.estimate_token_count(seg)  # output 1/5 tokens
-            keypoints.append( self.summerize_segment(seg, int(token_count/5)) )
+            key=self.summerize_segment(seg, int(token_count/5)) 
+            if key:
+                keypoints.append(key)
+            else:
+                print("key is empty, skip this segment!")
+
 
         xx=len(keypoints) 
         if  xx>1:

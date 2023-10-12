@@ -61,17 +61,16 @@ class Bot:
             BotCommand(command='/remove_channel', description='删除频道'),
             BotCommand(command='/readme', description='Read me')
         ]
-        
+        await self.application.bot.setMyCommands(commands)
             
-    async def add_handlers(self):
+    def add_handlers(self):
         self.application.add_handler(CommandHandler("add_channel", self.add_channel))
         self.application.add_handler(MessageHandler( filters.TEXT & ~filters.COMMAND, self.message_handler) )
-
         self.application.add_handler(CommandHandler("readme", self.readme))
         self.application.add_handler(CommandHandler("view_channel", self.view_channel))
         self.application.add_handler(CommandHandler("remove_channel", self.remove_channel))
         self.application.add_handler(CallbackQueryHandler(self.remove_channel_callback))
- 
+
     def __init__(self, bot_token, db_path) -> None:
         builder=ApplicationBuilder().token(bot_token)
         self.application = builder.build()
@@ -79,7 +78,7 @@ class Bot:
         loop.run_until_complete(self.init_db(db_path))
 
         loop.run_until_complete(self.set_menu())
-
+        self.add_handlers()
 
     async def readme(self, update: Update, context: CallbackContext) ->None:
         tt="""
