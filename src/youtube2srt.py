@@ -11,7 +11,11 @@ class SubtitleDownloader:
         self.ydl=youtube_dl.YoutubeDL(ydl_opts)
         self.audio2text_tool=audio2text_tool
     def download_audio(self, url):
-        self.ydl.download([url])
+        try:
+            self.ydl.download([url])
+        except youtube_dl.utils.DownloadError as e:
+            print("DownloadError: ", e)
+            return None
 
 
     def json2srt(self, subtitle_json):
