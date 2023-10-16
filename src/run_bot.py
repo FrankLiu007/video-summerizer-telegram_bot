@@ -4,6 +4,7 @@ import json
 import os
 import chardet
 if __name__ == "__main__":
+
     path="../video-summerizer-config.json"
 # read config file with encoding detection
     with open(path, 'rb') as f:

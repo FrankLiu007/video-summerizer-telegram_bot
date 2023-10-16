@@ -45,6 +45,7 @@ async def add_user_if_not_exist(conn, user_id, username):
     user=await select_data_from_database(conn, "user", tg_user_id=user_id)
     if not user:
         now=time.time()+time.altzone
+        print("user not exists, adding user: ",  username)
         await insert_data_to_database(conn, "user", tg_user_id = user_id, username=username, last_processed_video_time=now)
     return 
 
@@ -96,17 +97,22 @@ class Bot:
         """Adds a channel to the list of channels the bot is in"""
         user_id = update.effective_user.id
         username = update.effective_user.full_name
+
+        print("adding channel for ", username)
+
         await add_user_if_not_exist(self.conn, user_id, username)
 
         context.user_data['action']='add_channel'
-        print(type(user_id), user_id)
-        await update.message.reply_text(f"please input the url of the channel {user_id}.")
+
+        await update.message.reply_text(f"please input the url of a video, the bot will detect the channel automaticly:")
 
     async def view_channel(self, update: Update, context: CallbackContext) -> None:
         """Adds a channel to the list of channels the bot is in"""
         user_id = update.effective_user.id
         username = update.effective_user.full_name
         await add_user_if_not_exist(self.conn, user_id, username)
+
+        print("view channel for ", username)
 
         #all_channel=get_all_channel(self.cur, user_id)
         all_channel= await select_data_from_database(self.conn, "user_channel", tg_user_id=user_id)
@@ -128,6 +134,8 @@ class Bot:
         username = update.effective_user.full_name
         await add_user_if_not_exist(self.conn, user_id, username)
 
+        print("remove channel for ", username)
+        
         query = update.callback_query
         await query.answer()
         channel=await select_data_from_database(self.conn, "user_channel", tg_user_id=user_id, channel_url=query.data)
