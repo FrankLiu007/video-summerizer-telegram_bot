@@ -1,4 +1,3 @@
-import requests
 from db_query import *
 import time
 from youtube2srt import audio2text, SubtitleDownloader
@@ -7,6 +6,7 @@ import asyncio
 import json
 import telegra_ph 
 import os
+import utils
 
 def send_telegram_message(token, chat_id, message):
     """
@@ -19,18 +19,9 @@ def send_telegram_message(token, chat_id, message):
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     params = {"chat_id": chat_id, "text": message, 'parse_mode': 'HTML'}
 
-    proxies={
-        "http": os.environ["HTTP_PROXY"],
-        "https": os.environ["HTTPS_PROXY"]
-    }
-    for i in range(5):
-        try:
-            response = requests.post(url, data=params, proxies=proxies)
-            break
-        except:
-            print("Error: telegram message sent failed! retrying...")
-            time.sleep(5)
-    if response.status_code!=200:
+    response = utils.get_http_responce(url, 'POST', params)
+
+    if response.status!=200:
         print(f"Error: telegram message sent failed! status_code={response.status_code}, text={response.text}")
         print("message:\n", message)
     return response
@@ -59,12 +50,9 @@ async def get_video_list(conn, channel):
     old_video_time=channel["newest_video_time"]
     now=time.time()+time.altzone
 
-    proxies={
-        "http": os.environ["HTTP_PROXY"],
-        "https": os.environ["HTTPS_PROXY"]
-    }
-    res=requests.get("https://rsshub.app/"+channel["channel_url"]+".json", proxies=proxies)
-    data=json.loads(res.text)
+    res=utils.get_http_responce("https://rsshub.app/"+channel["channel_url"]+".json", 'GET', None)
+
+    data=json.loads(res.data)
     
     result=[]
     for item in data["items"] :

@@ -1,6 +1,7 @@
 import time
-import requests
+import utils
 import os
+import json
 def split_paragraphs(paragraphs):
     result =  []
     content=[]
@@ -65,7 +66,7 @@ def create_telegraph_page(access_token, title, content):
     params = {
         "access_token": access_token,  # 可选，如果你有一个
         "title": title,
-        "content": content,
+        "content": json.dumps(content, ensure_ascii=False),
         "return_content": True
     }
     return post_telegraph_page(base_url, params)
@@ -77,7 +78,7 @@ def edit_telegraph_page(access_token, title, content, path):
     params = {
         "access_token": access_token,  # 可选，如果你有一个
         "title": title,
-        "content": content,
+        "content": json.dumps(content, ensure_ascii=False),
         "path": path,  #  去除http://telegra.ph/后的路径
         "return_content": True
     }
@@ -86,11 +87,8 @@ def edit_telegraph_page(access_token, title, content, path):
 
 ##
 def post_telegraph_page(base_url, params):
-    proxies={
-        "http": os.environ["HTTP_PROXY"],
-        "https": os.environ["HTTPS_PROXY"]
-    }
-    json_response = requests.post(base_url, json=params, proxies=proxies).json()
+
+    json_response = json.loads(utils.get_http_responce(base_url,"POST",  params))
     if json_response.get("ok"):
         return json_response["result"]["url"] 
     else:

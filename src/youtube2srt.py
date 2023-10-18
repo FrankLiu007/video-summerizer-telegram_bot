@@ -1,5 +1,5 @@
 import youtube_dl
-import  requests
+import  utils
 import json
 import pandas as pd
 from whisper_helper import audio2text
@@ -66,7 +66,8 @@ class SubtitleDownloader:
                 print('json3 format subtitles not found')
                 return None
             tmp= subtitles[lang][0]     # using json3 only
-            subtitle_json=json.loads(requests.get(tmp['url'], proxies=proxies).text)
+            tt=utils.get_http_responce(tmp['url'], 'GET', None)
+            subtitle_json=json.loads(tt.data)
             subtitle=self.json2srt(subtitle_json)
             return subtitle
 

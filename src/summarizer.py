@@ -1,7 +1,6 @@
 import openai
 import pandas as pd
 import tiktoken 
-import requests
 import os
 import traceback
 
