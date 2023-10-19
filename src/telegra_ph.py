@@ -88,7 +88,7 @@ def edit_telegraph_page(access_token, title, content, path):
 ##
 def post_telegraph_page(base_url, params):
 
-    json_response = json.loads(utils.get_http_responce(base_url,"POST",  params))
+    json_response = json.loads(utils.get_http_responce(base_url,"POST",  params).data)
     if json_response.get("ok"):
         return json_response["result"]["url"] 
     else:

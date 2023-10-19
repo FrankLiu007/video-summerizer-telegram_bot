@@ -134,8 +134,8 @@ async def video_summerizer(conn, config, video_pool, lock):
                 + result
 
             res=send_telegram_message(config["telegram_bot"]["token"], video["tg_user_id"], tg_message)
-            if res.status_code!=200:
-                print(f"Error: telegram message sent failed! status_code={res.status_code}, text={res.text}")
+            if res.status!=200:
+                print(f"Error: telegram message sent failed! status_code={res.status}, text={res.text}")
                 continue
             else:
                 print(f"video {video['title']} summerized and sent to user {video['tg_user_id']}!")

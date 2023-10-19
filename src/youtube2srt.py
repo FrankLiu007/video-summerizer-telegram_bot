@@ -44,8 +44,12 @@ class SubtitleDownloader:
             subtitle=self.down_subtitle(self.info_dict['subtitles'])
             return  subtitle
         else:           ##video do not have subtitles
+            
             self.download_audio(url)
             print(f" {fname} downloaded!")
+            if(not os.path.exists(fname)):
+                print(f" {fname} download failed!")
+                return None
             subtitle=self.audio2text_tool.process(fname)
 
             return  subtitle
