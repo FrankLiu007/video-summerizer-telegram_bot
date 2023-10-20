@@ -22,7 +22,7 @@ def send_telegram_message(token, chat_id, message):
     response = utils.get_http_responce(url, 'POST', params)
 
     if response.status!=200:
-        print(f"Error: telegram message sent failed! status_code={response.status_code}, text={response.text}")
+        print(f"Error: telegram message sent failed! status_code={response.status}, text={response.text}")
         print("message:\n", message)
     return response
 
